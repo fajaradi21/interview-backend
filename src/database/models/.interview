@@ -1,0 +1,70 @@
+"use strict"
+const { Model } = require("sequelize")
+module.exports = (sequelize, DataTypes) => {
+  class Interview extends Model {
+    /**
+     * Helper method for defining associations.
+     * This method is not a part of Sequelize lifecycle.
+     * The `models/index` file will call this method automatically.
+     */
+    static associate(models) {
+      // define association here
+      this.belongsTo(models.entries, {
+        foreignKey: "entriesId",
+        as: "entries",
+      })
+    }
+  }
+  Interview.init(
+    {
+      title: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+          notNull: {
+            msg: "Title is required",
+          },
+        },
+      },
+      entriesId: {
+        type: DataTypes.INTEGER,
+        references: {
+          model: "users",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
+        allowNull: false,
+        validate: {
+          notNull: {
+            msg: "Entries id is required",
+          },
+          checkUserExist: async function (value, next) {
+            try {
+              const userExist = await sequelize.models.entries
+                .findOne({
+                  where: {
+                    id: value,
+                  },
+                })
+                .then((data) => {
+                  if (!data) {
+                    next("Entry not found")
+                  } else {
+                    next()
+                  }
+                })
+            } catch (error) {
+              next(error)
+            }
+          },
+        },
+      },
+    },
+    {
+      sequelize,
+      modelName: "Interview",
+    }
+  )
+  return Interview
+}
